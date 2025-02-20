@@ -1,7 +1,6 @@
 module Model exposing (GeoLocState(..), JSGeoError, Location, Model, Msg(..), MyLocation, Position, Projection(..), Settings, iniMeanPosition, iniMeasurements, iniModel, iniMyLocation, iniSettings, platzspitz, winti)
 
 import Dict
-import Element
 import Json.Decode as JD
 import Time
 

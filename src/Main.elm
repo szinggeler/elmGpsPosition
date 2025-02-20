@@ -1,35 +1,15 @@
 module Main exposing (init, main)
 
 import Browser
-import Browser.Dom
-import Browser.Events
 import Element exposing (..)
-import Element.Background as Background
-import Element.Border as Border
-import Element.Events exposing (onClick)
-import Element.Font as Font
-import FormatNumber
 import Geolocation
 import Json.Decode as JD
 import Json.Encode as JE
 import Model exposing (..)
 import Styles
-import Task exposing (Task)
+import Task
 import Time
 import View
-
-
-
-{-
-   main :
-     Browser.document :
-       { init : flags -> ( model, Cmd msg )
-       , view : model -> Document msg
-       , update : msg -> model -> ( model, Cmd msg )
-       , subscriptions : model -> Sub msg
-       }
-       -> Program flags model msg
--}
 
 
 main =
@@ -46,7 +26,7 @@ main =
 
 
 init : () -> ( Model, Cmd Msg )
-init refLocation =
+init _ =
     ( iniModel, Task.perform GetTimeZone Time.here )
 
 
@@ -57,9 +37,7 @@ init refLocation =
 view model =
     Element.layout []
         (column
-            ([ width fill ]
-                ++ Styles.unselectable
-            )
+            (width fill :: Styles.unselectable)
             [ View.showView model ]
         )
 
@@ -69,7 +47,7 @@ view model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Sub.batch
         [ Geolocation.changelocation LocationChange
         , Geolocation.errorlocation LocationError
@@ -107,27 +85,6 @@ update action model =
                 loc =
                     JD.decodeValue Geolocation.decodeLocation jslocation
 
-                buildMyLoc : Location -> MyLocation
-                buildMyLoc resultLoc =
-                    { -- Device location
-                      longitude = resultLoc.longitude
-                    , latitude = resultLoc.latitude
-                    , accuracyPos = resultLoc.accuracyPos
-                    , altitude = resultLoc.altitude
-                    , accuracyAltitude = resultLoc.accuracyAltitude
-                    , movingSpeed = resultLoc.movingSpeed
-                    , movingDegrees = resultLoc.movingDegrees
-                    , timestamp = resultLoc.timestamp
-
-                    -- LV95
-                    , east = 0
-                    , north = 0
-                    , height = Nothing
-
-                    -- Reference
-                    , locationKey = ""
-                    , distance = 0
-                    }
 
                 newModel : Model
                 newModel =
@@ -199,56 +156,38 @@ wgsToMyLocation model location =
                 - (194.56 * λ ^ 2 * φ)
                 + (119.79 * φ ^ 3)
 
+        alti : Maybe Float
         alti =
-            case location.altitude of
-                Just a ->
-                    Just (toFloat (round (a * 100)) / 100)
+            Maybe.map (\a -> toFloat (round (a * 100)) / 100) location.altitude
 
-                Nothing ->
-                    Nothing
-
+        altiAcc : Maybe Float
         altiAcc =
-            case location.accuracyAltitude of
-                Just a ->
-                    Just (toFloat (round (a * 100)) / 100)
+            Maybe.map (\a -> toFloat (round (a * 100)) / 100) location.accuracyAltitude
 
-                Nothing ->
-                    Nothing
-
+        h : Maybe Float
         h =
-            case alti of
-                Just a ->
-                    Just
-                        (toFloat
-                            (round
-                                (((a - 49.55)
-                                    + (2.73 * λ)
-                                    + (6.94 * φ)
-                                 )
-                                    * 100
-                                )
+            Maybe.map
+                (\a ->
+                    toFloat
+                        (round
+                            (((a - 49.55)
+                                + (2.73 * λ)
+                                + (6.94 * φ)
+                             )
+                                * 100
                             )
-                            / 100
                         )
+                        / 100
+                )
+                alti
 
-                Nothing ->
-                    Nothing
-
+        movSpeed : Maybe Float
         movSpeed =
-            case location.movingSpeed of
-                Just m ->
-                    Just (toFloat (round (m * 3.6)))
+            Maybe.map (\m -> toFloat (round (m * 3.6))) location.movingSpeed
 
-                Nothing ->
-                    Nothing
-
+        movDegree : Maybe Float
         movDegree =
-            case location.movingDegrees of
-                Just m ->
-                    Just (toFloat (round m))
-
-                Nothing ->
-                    Nothing
+            Maybe.map (\m -> toFloat (round m)) location.movingDegrees
     in
     { longitude = runden location.longitude 1000000
     , latitude = runden location.latitude 1000000

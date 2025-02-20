@@ -1,24 +1,15 @@
 module View exposing (showView)
 
-import Browser
-import Browser.Dom
-import Browser.Events
-import Color exposing (Color)
+import Color
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events exposing (onClick)
 import Element.Font as Font
 import FormatNumber
-import Geolocation
 import Html.Attributes as Attr
-import Json.Decode as JD
-import Json.Encode as JE
 import Material.Icons.Toggle exposing (..)
 import Model exposing (..)
-import Styles
-import Svg exposing (Svg)
-import Task exposing (Task)
 import Time
 
 
@@ -26,14 +17,10 @@ showView model =
     let
         gpsOn : Bool
         gpsOn =
-            if model.watchId == 0 then
-                False
-
-            else
-                True
+            model.watchId /= 0
     in
-    column [ centerX ]
-        [ column
+    el [ centerX ]
+        (column
             [ padding 10
             , spacing 10
             , width fill
@@ -54,7 +41,7 @@ showView model =
             , showLinks model
             , showFooter
             ]
-        ]
+        )
 
 
 showSubtitle : String -> Element Msg
@@ -89,7 +76,10 @@ Amt für Raumentwicklung""")
 
 logo : Element Msg
 logo =
-    image [ width (fillPortion 1) ] { src = "./img/loewe.png", description = "Logo Kt.ZH" }
+    image [ width (fillPortion 1) ]
+        { src = "./img/loewe.png"
+        , description = "Logo Kt.ZH"
+        }
 
 
 showTitle : Element Msg
@@ -338,11 +328,9 @@ showLinks model =
 
         rowConfig2 =
             { text1 = "Erfahren Sie "
-            , url = "https://are.zh.ch/kontrollpunkt"
+            , url = "https://www.zh.ch/de/planen-bauen/geoinformation/kataster.html#1068857101"
             , label = "hier"
             , text2 = " mehr über den Kontrollpunkt"
-
-            --, text2 = " mehr über die Standortgenauigkeit Ihres mobilen Gerätes."
             }
 
         buildRow cfg =
@@ -392,13 +380,29 @@ gbParams model =
             , locOst = myloc.east
             , locNord = myloc.north
             }
+
+        scale =
+            round (sqrt ((pos.refOst - pos.locOst) ^ 2 + (pos.refNord - pos.locNord) ^ 2) * 10)
+
+        x =
+            round ((pos.refOst + pos.locOst) / 2)
+
+        y =
+            round ((pos.refNord + pos.locNord) / 2)
     in
     "topic=OrthoZH"
-        ++ "&scale=1000"
+        ++ "&scale="
+        ++ String.fromInt
+            (if scale > 100 then
+                scale
+
+             else
+                100
+            )
         ++ "&x="
-        ++ String.fromFloat pos.refOst
+        ++ String.fromInt x
         ++ "&y="
-        ++ String.fromFloat pos.refNord
+        ++ String.fromInt y
         ++ "&srid=2056"
         ++ "&redlining=GEOMETRYCOLLECTION("
         ++ "POINT("
@@ -552,7 +556,6 @@ scaled x =
 
 colorZhBlue : Element.Color
 colorZhBlue =
-    -- #1396ed
     rgb255 19 150 237
 
 
@@ -572,15 +575,18 @@ swissNumbers =
     }
 
 
-wgsNumbers =
-    { decimals = 6
-    , thousandSeparator = "'"
-    , decimalSeparator = "."
-    , negativePrefix = "-"
-    , negativeSuffix = ""
-    , positivePrefix = ""
-    , positiveSuffix = ""
-    }
+
+{-
+   wgsNumbers =
+       { decimals = 6
+       , thousandSeparator = "'"
+       , decimalSeparator = "."
+       , negativePrefix = "-"
+       , negativeSuffix = ""
+       , positivePrefix = ""
+       , positiveSuffix = ""
+       }
+-}
 
 
 secNumbers =
